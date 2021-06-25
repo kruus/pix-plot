@@ -130,6 +130,20 @@ select:disabled {
   cursor: crosshair;
 }
 
+#debug {
+  visibility: hidden;
+  position: absolute;
+  top: 90px;
+  left:110px;
+  height: auto;
+  z-index: 4
+  padding: 1em;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-family: monospace;
+  pointer-events: none;
+}
+
 #stats {
   position: absolute;
   top: 55px;
@@ -179,10 +193,10 @@ select:disabled {
 }
 
 #logo {
-  width: 33px;
-  padding: 10px;
+  height: 32px;
+  background: #ffffff;
   position: relative;
-  top: 2px;
+  padding: 8px 8px
 }
 
 #app-name {
@@ -191,7 +205,8 @@ select:disabled {
   vertical-align: top;
   padding: 11px 34px;
   box-sizing: border-box;
-  font-weight: 300;
+  /* font-weight: 300; */
+  font-weight: bold;
   background: #444;
   color: #fff;
   font-size: 21px;

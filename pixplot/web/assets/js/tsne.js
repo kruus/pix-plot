@@ -1,4 +1,5 @@
 // version: VERSION_NUMBER
+// vim: sw=2 ts=2 et
 
 /**
 *
@@ -49,10 +50,16 @@ function Config() {
   }
   this.size = {
     cell: 32, // height of each cell in atlas
-    lodCell: 128, // height of each cell in LOD
-    atlas: 2048, // height of each atlas
+    lodCell: 64, // height of each cell in LOD // == pixplot.py lod_cell_height
+    atlas: Math.min(1024,webgl.limits.textureSize), // height of each atlas // == pixplot.py atlas_size
+    // webgl.limits.textureSize available later as
+    //   world.renderer.capabilities.maxTextureSize
     texture: webgl.limits.textureSize,
-    lodTexture: 2**13,
+    lodTexture: Math.min(2**13,webgl.limits.textureSize),
+    // [ejk] I get console warning
+    //       Texture has been resized from (8192x8192) to (4096x4096)
+    // Followed by coordinates out-of-bound errors and wrong large-zoom images
+    //lodTexture: 2**12,
     points: {
       min: 0, // min point size
       max: 0, // max point size
@@ -70,7 +77,8 @@ function Config() {
     ease: Power1.easeOut,
     }
   }
-  this.pickerMaxZ = 0.4; // max z value of camera to trigger picker modal
+  //this.pickerMaxZ = 0.4; // max z value of camera to trigger picker modal
+  this.pickerMaxZ = 1.0; // max z value of camera to trigger picker modal
   this.atlasesPerTex = (this.size.texture/this.size.atlas)**2;
   this.isLocalhost = window.location.hostname.includes('localhost') ||
     window.location.hostname.includes('127.0.0.1') ||
@@ -251,6 +259,7 @@ Texture.prototype.setCanvas = function() {
   })
   this.ctx = this.canvas.getContext('2d');
 }
+
 
 Texture.prototype.load = function() {
   this.setCanvas();
@@ -847,9 +856,29 @@ function World() {
     borderWidth: document.querySelector('#border-width-range-input'),
     selectTooltip: document.querySelector('#select-tooltip'),
     selectTooltipButton: document.querySelector('#select-tooltip-button'),
+    //debug: document.querySelector("#debug")
   };
   this.addEventListeners();
 }
+
+class ClearingLogger { // [ejk]
+  constructor(elem) {
+    this.elem = elem;
+    this.lines = [];
+  }
+  log(...args) {
+    var line = [...args].join(' ')
+    console.log(line)
+    this.lines.push(line);
+  }
+  render() {
+    // optional on-screen rendering
+    //this.elem.textContent = this.lines.join('\n'); // ugly top log box
+    this.lines = [];
+  }
+}
+
+const logger = new ClearingLogger(document.querySelector("#debug"));
 
 /**
 * Return a scene object with a background color
@@ -877,6 +906,7 @@ World.prototype.getCamera = function() {
   var canvasSize = getCanvasSize();
   var aspectRatio = canvasSize.w /canvasSize.h;
   return new THREE.PerspectiveCamera(75, aspectRatio, 0.001, 10);
+  //return new THREE.PerspectiveCamera(75, aspectRatio, 0.5, 1.0);
 }
 
 /**
@@ -890,6 +920,8 @@ World.prototype.getRenderer = function() {
   });
   renderer.autoClear = false;
   renderer.toneMapping = THREE.ReinhardToneMapping;
+  logger.log('max texture size',renderer.capabilities.maxTextureSize,
+      'max textures',    renderer.capabilities.maxTextures);
   return renderer;
 }
 
@@ -904,6 +936,10 @@ World.prototype.getControls = function() {
   controls.zoomSpeed = 0.4;
   controls.panSpeed = 0.4;
   controls.noRotate = true;
+  // controls.keys = [65, 83, 68]
+  controls.maxDistance = 5.0; // ? match PerspectiveCamera(75, aspectRatio, 0.001, 10)
+  controls.minDistance = 0.001;
+  logger.log(':trackball min',controls.minDistance,'max',controls.maxDistance);
   return controls;
 }
 
@@ -973,11 +1009,13 @@ World.prototype.handleResize = function() {
 }
 
 World.prototype.setScaleUniforms = function() {
-    // handle case of drag before scene renders
+  // handle case of drag before scene renders
   if (!this.state.displayed) return;
   var scale = world.getPointScale();
   world.setUniform('scale', scale);
   if (lines.mesh) lines.mesh.material.uniforms.scale.value = scale;
+  logger.log('PointSize:', scale.toFixed(3)); // [ejk]
+  logger.render();
 }
 
 /**
@@ -1462,10 +1500,21 @@ World.prototype.flyTo = function(obj) {
   this.state.flying = true;
   // get a new camera to reset .up and .quaternion on this.camera
   var camera = this.getCamera(),
-      controls = new THREE.TrackballControls(camera);
-  camera.position.set(obj.x, obj.y, obj.z);
+      //controls = new THREE.TrackballControls(camera);
+      controls = this.getControls();
+  logger.log('cam0',camera.position.x.toFixed(2),camera.position.y.toFixed(2),camera.position.z.toFixed(2));
+  //var camera_z = Math.max(
+  //    config.pickerMaxZ+1e-4,
+  //    obj.z + (this.getPointScale() / 100) + 1e-4
+  //);
+  var camera_z = obj.z
+  logger.log('camera_z',camera_z);
+  camera.position.set(obj.x, obj.y, camera_z); // [ejk]
   controls.target.set(obj.x, obj.y, obj.z);
   controls.update();
+  logger.log('flyTo',obj.x.toFixed(3),obj.y.toFixed(3),obj.z.toFixed(3));
+  logger.render();
+
   // prepare scope globals to transition camera
   var time = 0,
       q0 = this.camera.quaternion.clone();
@@ -1490,6 +1539,7 @@ World.prototype.flyTo = function(obj) {
       this.controls.target = new THREE.Vector3(c.x, c.y, zMin);
       this.controls.update();
       this.state.flying = false;
+      logger.log('cam1',camera.position.x.toFixed(2),camera.position.y.toFixed(2),camera.position.z.toFixed(2));
     }.bind(this),
     ease: obj.ease || Power4.easeInOut,
   });
@@ -1498,14 +1548,14 @@ World.prototype.flyTo = function(obj) {
 // fly to the cell at index position `idx`
 World.prototype.flyToCellIdx = function(idx) {
   var cell = data.cells[idx];
-  world.flyTo({
-    x: cell.x,
-    y: cell.y,
-    z: Math.min(
+  var cell_z = Math.min(
       config.pickerMaxZ-0.0001,
       cell.z + (this.getPointScale() / 100)
-    ),
-  })
+    );
+  logger.log('cell.z',cell.z.toFixed(3),'->',cell_z.toFixed(3),
+    ' PickerMaxZ',config.pickerMaxZ.toFixed(3),
+    'PointScale',this.getPointScale().toFixed(3));
+  world.flyTo({ x: cell.x, y: cell.y, z: cell_z, })
 }
 
 // fly to the cell at index position `idx`
@@ -1613,6 +1663,8 @@ World.prototype.hideSelectTooltip = function() {
 
 World.prototype.setMode = function(mode) {
   this.mode = mode;
+  logger.log('setMode', mode); // [ejk]
+  logger.render();
   // update the ui buttons to match the selected mode
   var elems = document.querySelectorAll('#selection-icons img');
   for (var i=0; i<elems.length; i++) {
@@ -2797,6 +2849,9 @@ function LOD() {
   var r = 1; // radius of grid to search for cells to activate
   this.tex = this.getCanvas(config.size.lodTexture); // lod high res texture
   this.cell = this.getCanvas(config.size.lodCell);
+  logger.log('LOD cell',config.size.lodCell,'tex',config.size.lodTexture);
+  logger.log('tex',this.tex.texture.image.height.toString(),
+             'x',  this.tex.texture.image.width.toString());
   this.cellIdxToImage = {}; // image cache mapping cell idx to loaded image data
   this.grid = {}; // set by this.indexCells()
   this.minZ = 0.8; // minimum zoom level to update textures
@@ -3550,6 +3605,8 @@ Globe.prototype.hide = function() {
 function Webgl() {
   this.gl = this.getGl();
   this.limits = this.getLimits();
+  logger.log('max texture size',this.limits.textureSize,
+             'max textures',    this.limits.textureCount);
 }
 
 /**

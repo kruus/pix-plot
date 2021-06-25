@@ -5,7 +5,13 @@ from os.path import basename, join, exists, dirname, realpath
 from keras.applications.inception_v3 import preprocess_input
 from keras.applications import InceptionV3, imagenet_utils
 from sklearn.metrics import pairwise_distances_argmin_min
-from keras.backend.tensorflow_backend import set_session
+
+#if pkg_resources.packaging.version.parse(tf.__version__) >= pkg_resources.packaging.version.parse("2.4.0"): # ? (I had tf 2.5.0)
+#    from tensorflow.compat.v1.keras.backend import set_session
+#else:
+#    from keras.backend.tensorflow_backend import set_session
+
+
 from collections import defaultdict, namedtuple
 from dateutil.parser import parse as parse_date
 from sklearn.preprocessing import minmax_scale
@@ -41,6 +47,11 @@ import json
 import sys
 import csv
 import os
+
+try:
+    from keras.backend.tensorflow_backend import set_session
+except:
+    from tensorflow.compat.v1.keras.backend import set_session
 
 try:
   from MulticoreTSNE import MulticoreTSNE as TSNE
@@ -95,9 +106,9 @@ config = {
   'encoding': 'utf8',
   'min_cluster_size': 20,
   'max_clusters': 10,
-  'atlas_size': 2048,
+  'atlas_size': 1024, # [ejk] was 2048, but I was getting texture resize on laptop
   'cell_size': 32,
-  'lod_cell_height': 128,
+  'lod_cell_height': 64,
   'n_neighbors': [2, 15, 40],
   'min_distance': [0.01],
   'metric': 'correlation',
@@ -1328,6 +1339,14 @@ class Image:
 # Entry Point
 ##
 
+def str_to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in {'false', 'f', '0', 'no', 'n'}:
+        return False
+    elif value.lower() in {'true', 't', '1', 'yes', 'y'}:
+        return True
+    raise ValueError(f'{value} is not a valid boolean value')
 
 def parse():
   '''Read command line args and begin data processing'''
@@ -1336,7 +1355,7 @@ def parse():
   parser.add_argument('--images', type=str, default=config['images'], help='path to a glob of images to process', required=False)
   parser.add_argument('--metadata', type=str, default=config['metadata'], help='path to a csv or glob of JSON files with image metadata (see readme for format)', required=False)
   parser.add_argument('--max_images', type=int, default=config['max_images'], help='maximum number of images to process from the input glob', required=False)
-  parser.add_argument('--use_cache', type=bool, default=config['use_cache'], help='given inputs identical to prior inputs, load outputs from cache', required=False)
+  parser.add_argument('--use_cache', type=str_to_bool, default=config['use_cache'], help='given inputs identical to prior inputs, load outputs from cache', required=False)
   parser.add_argument('--encoding', type=str, default=config['encoding'], help='the encoding of input metadata', required=False)
   parser.add_argument('--min_cluster_size', type=int, default=config['min_cluster_size'], help='the minimum number of images in a cluster', required=False)
   parser.add_argument('--max_clusters', type=int, default=config['max_clusters'], help='the maximum number of clusters to return', required=False)
