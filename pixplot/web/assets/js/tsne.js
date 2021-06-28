@@ -80,10 +80,13 @@ function Config() {
   //this.pickerMaxZ = 0.4; // max z value of camera to trigger picker modal
   this.pickerMaxZ = 1.0; // max z value of camera to trigger picker modal
   this.atlasesPerTex = (this.size.texture/this.size.atlas)**2;
-  this.isLocalhost = window.location.hostname.includes('localhost') ||
-    window.location.hostname.includes('127.0.0.1') ||
-    window.location.hostname.includes('0.0.0.0') ||
-    window.location.hostname.includes('[::]');
+
+  // [ejk] let me try always claiming "localhost"
+  this.isLocalhost = 1
+  //this.isLocalhost = window.location.hostname.includes('localhost') ||
+  //  window.location.hostname.includes('127.0.0.1') ||
+  //  window.location.hostname.includes('0.0.0.0') ||
+  //  window.location.hostname.includes('[::]');
 }
 
 /**
@@ -3427,7 +3430,9 @@ Hotspots.prototype.render = function() {
         e.stopPropagation();
         // select a random image from those in this cluster
         var selected = Math.floor(Math.random() * this.json[i].images.length);
-        this.json[i].img = data.json.images[inside[selected]];
+        //this.json[i].img = data.json.images[inside[selected]];
+        // PR #195 changed above to:
+        this.json[i].img = data.json.images[this.json[i].images[selected]];
         // make the change saveable
         this.setEdited(true);
         this.render();

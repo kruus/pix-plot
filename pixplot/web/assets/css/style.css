@@ -1,3 +1,5 @@
+/* vim: ts=2 sw=2 et
+ * */
 * {
   margin: 0;
   padding: 0;
@@ -159,14 +161,27 @@ select:disabled {
   position: absolute;
   top: 0;
   left: 0;
+  right: 0;
   height: 48px;
   width: 100%;
+  z-index: 10;
+  -webkit-transform: translateZ(10px);
+  -moz-transform: translateZ(10px);
+  -o-transform: translateZ(10px);
+  transform: translateZ(10px);
+}
+
+#header,
+#logo {
+  background: #333333;
+  position: relative;
+  z-index: 4;
 }
 
 #header {
   height: 48px;
   width: 100%;
-  position: fixed;
+  /*position: fixed;*/
   top: 0px;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
   border-bottom: 1px solid #1f1f1f;
@@ -185,18 +200,12 @@ select:disabled {
   font-size: 0;
 }
 
-#header,
+/* #logo { height: 32px; background: #ffffff; position: relative; padding: 8px 8px } */
 #logo {
-  background: #333333;
+  width: 33px;
+  padding: 10px;
   position: relative;
-  z-index: 4;
-}
-
-#logo {
-  height: 32px;
-  background: #ffffff;
-  position: relative;
-  padding: 8px 8px
+  top: 2px;
 }
 
 #app-name {
@@ -793,7 +802,7 @@ nav h2 {
 * Hotspot actions
 **/
 
-#hotspot-achotspot-0tions {
+#hotspot-actions {
   position: absolute;
   left: 115px;
   bottom: 10px;
