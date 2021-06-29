@@ -5,13 +5,7 @@ from os.path import basename, join, exists, dirname, realpath
 from keras.applications.inception_v3 import preprocess_input
 from keras.applications import InceptionV3, imagenet_utils
 from sklearn.metrics import pairwise_distances_argmin_min
-
-#if pkg_resources.packaging.version.parse(tf.__version__) >= pkg_resources.packaging.version.parse("2.4.0"): # ? (I had tf 2.5.0)
-#    from tensorflow.compat.v1.keras.backend import set_session
-#else:
-#    from keras.backend.tensorflow_backend import set_session
-
-
+#from keras.backend.tensorflow_backend import set_session # tf-2.5.0 incompat
 from collections import defaultdict, namedtuple
 from dateutil.parser import parse as parse_date
 from sklearn.preprocessing import minmax_scale
