@@ -418,6 +418,11 @@ def get_manifest(**kwargs):
   # create a heightmap for the umap layout
   if 'umap' in layouts and layouts['umap']:
     get_heightmap(layouts['umap']['variants'][0]['layout'], 'umap', **kwargs)
+  # create default hotspots
+  default_hotspots = ""; # possible json file
+  umap_vecs = best_umap_clustering_json(layouts=layouts,**kwargs)
+  if umap_vecs is not None:
+    default_hotspots = get_hotspots(vecs=read_json(umap_vecs, **kwargs), **kwargs)
   # specify point size scalars
   point_sizes = {}
   point_sizes['min'] = 0
@@ -442,7 +447,8 @@ def get_manifest(**kwargs):
     'imagelist': get_path('imagelists', 'imagelist', **kwargs),
     'atlas_dir': kwargs['atlas_dir'],
     'metadata': True if kwargs['metadata'] else False,
-    'default_hotspots': get_hotspots(vecs=read_json(layouts['umap']['variants'][0]['layout'], **kwargs), **kwargs),
+    #'default_hotspots': get_hotspots(vecs=read_json(layouts['umap']['variants'][0]['layout'], **kwargs), **kwargs),
+    'default_hotspots': default_hotspots,
     'custom_hotspots': get_path('hotspots', 'user_hotspots', add_hash=False, **kwargs),
     'config': {
       'sizes': {
@@ -1210,12 +1216,43 @@ def read_json(path, **kwargs):
   with open(path) as f:
     return json.load(f)
 
+def best_umap_clustering_json(layouts,**kwargs):
+  # layouts = get_layouts(**kwargs) # oops, this reruns "everything"
+  if 'umap' in layouts and layouts['umap']:
+    variants = layouts['umap']['variants']
+    best = 0 # max n_neighbors, then min min_dist
+    for i,layout in enumerate(variants):
+      print(" *   variant {} n_neighbors {} min_dist {}".format
+            (i, layout['n_neighbors'], layout['min_dist']))
+      i_nei = layout['n_neighbors']
+      b_nei = variants[best]['n_neighbors']
+      if i_nei > b_nei:
+        best = i
+      elif i_nei == b_nei:
+        i_min_dist = layout['min_dist']
+        b_min_dist = layout['min_dist']
+        if i_min_dist < b_min_dist:
+          best = i
+    b_nei = variants[best]['n_neighbors']
+    b_min_dist = layout['min_dist']
+    print(" *   best umap feature variant is {}, with {} neighbors, min_dist {}".format
+          (best, b_nei, b_min_dist))
+    if variants[best]['n_neighbors'] < 15:
+      print(" *   Warning: umap clustering n_neighbors {} seems a bit low".format(b_nei))
+    return variants[best]['layout'] # JSON path of umap fit
+  else:
+    return None
 
 def get_hotspots(**kwargs):
-  '''Return the stable clusters from the condensed tree of connected components from the density graph'''
+  """
+  Return the stable clusters from the condensed tree of connected components from the density graph
+
+  @return path of json hotspots file
+  """
   print(' * Clustering data with {}'.format(cluster_method))
   model = get_cluster_model(**kwargs)
   v = kwargs['vecs']
+
   z = model.fit(v)
   # create a map from cluster label to image indices in cluster
   d = defaultdict(lambda: defaultdict(list))
@@ -1399,3 +1436,4 @@ def parse():
 
 if __name__ == '__main__':
   parse()
+# vim: sw=2 ts=2 et

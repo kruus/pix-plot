@@ -539,10 +539,11 @@ Layout.prototype.init = function(options) {
     layoutDate: document.querySelector('#layout-date'),
     layoutPose: document.querySelector('#layout-pose'),
     layoutGeographic: document.querySelector('#layout-geographic'),
-    minDistInput: document.querySelector('#min-dist-range-input'),
-    nNeighborsInput: document.querySelector('#n-neighbors-range-input'),
-    minDistInputContainer: document.querySelector('#min-dist-range-input-container'),
     nNeighborsInputContainer: document.querySelector('#n-neighbors-range-input-container'),
+    nNeighborsInput: document.querySelector('#n-neighbors-range-input'),
+    nNeighborsValue: document.querySelector("#n-neighbors-value"),
+    minDistInputContainer: document.querySelector('#min-dist-range-input-container'),
+    minDistInput: document.querySelector('#min-dist-range-input'),
     layoutSelect: document.querySelector('#layout-select'),
   }
   this.initializeMobileLayoutOptions();
@@ -586,6 +587,7 @@ Layout.prototype.initializeUmapInputs = function() {
   var nNeighborsOptions = this.getNNeighborsOptions();
   var minDistOptions = this.getMinDistOptions();
   this.elems.nNeighborsInput.setAttribute('max', nNeighborsOptions.length-1);
+  this.elems.nNeighborsValue.innerHTML = this.getSelectedNNeighbors()
   this.elems.minDistInput.setAttribute('max', minDistOptions.length-1);
   this.elems.nNeighborsInput.addEventListener('change', function() {
     this.set('umap', true);
@@ -593,6 +595,10 @@ Layout.prototype.initializeUmapInputs = function() {
   this.elems.minDistInput.addEventListener('change', function() {
     this.set('umap', true);
   }.bind(this));
+  this.elems.nNeighborsInput.addEventListener("input", function() { // [ejk]
+    this.elems.nNeighborsValue.innerHTML = this.getSelectedNNeighbors()
+  }.bind(this));
+
 }
 
 Layout.prototype.showHideUmapInputs = function() {

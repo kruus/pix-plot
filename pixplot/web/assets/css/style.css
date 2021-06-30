@@ -473,6 +473,13 @@ input[type=range]::-ms-thumb {
   display: none;
 }
 
+#n-neighbors-label {
+  margin-right: 0px
+}
+#n-neighbors-value {
+  margin-left: 0px;
+}
+
 /**
 * Dual range slider
 **/
@@ -1816,9 +1823,11 @@ input[type=text] {
     padding: 10px;
   }
 
+  /* This is antiquated -- overridden below [ejk]
   .settings-label {
     font-size: 14px;
   }
+  */
 
   #icons #settings-icon {
     margin: 0;

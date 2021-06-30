@@ -420,6 +420,8 @@
           </div>
           <div class='range-slider' id='n-neighbors-range-input-container'>
             <div class='settings-label'>Number of Neighbors</div>
+            <div class='settings-label' id='n-neighbors-value'>XXX</div>
+            <!-- <div id='n-neighbors-number' class='settings-label'>2</div> -->
             <input id='n-neighbors-range-input' min='0' max='2' step='1' value='1' type='range' />
           </div>
           <div class='range-slider'>
@@ -663,5 +665,25 @@
       ga('create', 'UA-101732875-1', 'auto');
       ga('send', 'pageview');
     </script>
+    <!-- [ejk] maybe? 
+    <script type="text/javascript">
+      function GetScreenCordinates(obj) {
+        var p = {};
+        p.x = obj.offsetLeft;
+        p.y = obj.offsetTop;
+        while (obj.offsetParent) {
+          p.x = p.x + obj.offsetParent.offsetLeft;
+          p.y = p.y + obj.offsetParent.offsetTop;
+          if (obj == document.getElementsByTagName("body")[0]) {
+            break;
+          }
+          else {
+            obj = obj.offsetParent;
+          }
+        }
+        return p;
+      }
+    </script>
+    -->
   </body>
 </html>
