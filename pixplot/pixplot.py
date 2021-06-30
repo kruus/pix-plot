@@ -2,8 +2,8 @@ from __future__ import division
 import warnings; warnings.filterwarnings('ignore')
 from keras.preprocessing.image import save_img, img_to_array, array_to_img
 from os.path import basename, join, exists, dirname, realpath
-from keras.applications.inception_v3 import preprocess_input
-from keras.applications import InceptionV3, imagenet_utils
+#from keras.applications.inception_v3 import preprocess_input
+#from keras.applications import InceptionV3, imagenet_utils
 from sklearn.metrics import pairwise_distances_argmin_min
 #from keras.backend.tensorflow_backend import set_session # tf-2.5.0 incompat
 from collections import defaultdict, namedtuple
@@ -41,6 +41,16 @@ import json
 import sys
 import csv
 import os
+
+try:
+    from keras.applications.inception_v3 import preprocess_input
+except:
+    from tensorflow.keras.applications.inception_v3 import preprocess_input
+
+try:
+    from keras.applications import InceptionV3, imagenet_utils
+except:
+    from tensorflow.keras.applications import InceptionV3, imagenet_utils
 
 try:
     from keras.backend.tensorflow_backend import set_session
@@ -582,6 +592,8 @@ def get_umap_layout(**kwargs):
     'n_neighbors': i[0],
     'min_dist': i[1],
   } for i in itertools.product(kwargs['n_neighbors'], kwargs['min_dist'])]
+  # actually I'm not sure of the validity of aligning when n_neighbors
+  # is high and the distribution is looks smooth and globular.
   z = AlignedUMAP(
     n_neighbors=[i['n_neighbors'] for i in params],
     min_dist=[i['min_dist'] for i in params],
@@ -594,7 +606,10 @@ def get_umap_layout(**kwargs):
   # save the layouts
   l = []
   for idx, i in enumerate(params):
+      # [ejk] info
     filename = 'umap-n_neighbors_{}-min_dist_{}'.format(i['n_neighbors'], i['min_dist'])
+    print("params[{}] : layouts['umap']['variants'][{}]['layout'] ~ file {}".
+          format(idx, idx, filename))
     out_path = get_path('layouts', filename, **kwargs)
     json_path = write_layout(out_path, z.embeddings_[idx], **kwargs)
     l.append({

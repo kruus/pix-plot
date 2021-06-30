@@ -33,8 +33,8 @@ setup(
     #'h5py==2.10.0', # let this requirement come from tensorflow
     #'Keras<=2.3.0', # python 3.9 likes keras >= 2.4.3
     #'umap-learn>=0.5.1', # was ==, manually install "constraint" fork from kruus/
-    'tensorflow>=2.5.0',
-    'Keras>=2.4.3',
+    'tensorflow-gpu>=2.4.1',
+    'Keras==2.4.3',
     #'tensorflow>=2.2.0',
     #'Keras<=2.3.0',
     'cmake>=3.15.3',
