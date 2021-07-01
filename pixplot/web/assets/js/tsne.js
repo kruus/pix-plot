@@ -1703,8 +1703,10 @@ World.prototype.handleModeIconClick = function(e) {
 **/
 
 World.prototype.showSelectTooltip = function() {
+  // [ejk] testing for boolean value is hard to read. Switch to 'y', 'n'
   if (!localStorage.getItem('select-tooltip-cleared') ||
        localStorage.getItem('select-tooltip-cleared') == 'false') {
+  //if (localStorage.getItem('select-tooltip-cleared') == 'n') {
     this.elems.selectTooltip.style.display = 'inline-block';
   }
   this.elems.selectTooltipButton.addEventListener('click', function() {
@@ -1934,6 +1936,7 @@ Lasso.prototype.removeMesh = function() {
 
 Lasso.prototype.draw = function() {
   if (this.points.length < 4) return;
+  logger.log("Lasso Draw");
   this.points = this.getHull();
   // remove the old mesh
   this.removeMesh();
@@ -2087,7 +2090,8 @@ Lasso.prototype.getSelectedMap = function() {
 Lasso.prototype.toggleSelection = function(idx) {
   var image = data.json.images[idx];
   this.selected[image] = !this.selected[image];
-  this.setNSelected();
+  logger.log("lasso idx",idx," selected?",this.selected[image]);
+  this.setNSelected(); // [ejk] XXX no parameter means count them
 }
 
 Lasso.prototype.setNSelected = function(n) {
@@ -3474,12 +3478,15 @@ Hotspots.prototype.addEventListeners = function() {
     if (idxA != idxB) this.setEdited(true);
   }.bind(this))
   // add tooltip event listener
-  this.elems.nav.addEventListener('mouseenter', function(e) {
-    if (localStorage.getItem('hotspots-tooltip-cleared')) return;
-    this.elems.tooltip.style.display = 'block';
-  }.bind(this))
+  //this.elems.nav.addEventListener('mouseenter', function(e) {
+  this.elems.nav.addEventListener('mouseenter', function() {
+    if (!localStorage.getItem('hotspots-tooltip-cleared') ||
+      localStorage.getItem('hotspots-tooltip-cleared') == 'false') {
+      this.elems.tooltip.style.display = 'inline-block';
+    }
+  }.bind(this));
   // add tooltip clearing event listener
-  this.elems.clearTooltip.addEventListener('click', function(e) {
+  this.elems.clearTooltip.addEventListener('click', function() {
     localStorage.setItem('hotspots-tooltip-cleared', true);
     this.elems.tooltip.style.display = 'none';
   }.bind(this))
@@ -3765,6 +3772,7 @@ Webgl.prototype.getLimits = function() {
 function Keyboard() {
   this.pressed = {};
   window.addEventListener('keydown', function(e) {
+    logger.log("keyboard.pressed",e.keyCode)
     this.pressed[e.keyCode] = true;
   }.bind(this))
   window.addEventListener('keyup', function(e) {
@@ -3830,6 +3838,18 @@ function Tooltip() {
       this.elem.style.top = (offsets.top + i.elem.clientHeight + 16) + 'px';
     }.bind(this));
     i.elem.addEventListener('mouseleave', this.hide.bind(this))
+  }.bind(this));
+  // [ejk] tentative click on app-name turns dismissable tooltips back on
+  // TODO: can scan for all dismissables and undismiss them?
+  localStorage.setItem('select-tooltip-cleared', false);
+  localStorage.setItem('hotspots-tooltip-cleared', false);
+  var appName = document.querySelector('#app-name');
+  appName.addEventListener('click', function() {
+    localStorage.setItem('select-tooltip-cleared', false);
+    localStorage.setItem('hotspots-tooltip-cleared', false);
+    logger.log("tooltip cleared?:",
+      "select", localStorage.getItem('select-tooltip-cleared'),
+      "hotspots", localStorage.getItem('hotspots-tooltip-cleared'));
   }.bind(this));
 }
 
