@@ -16,6 +16,7 @@ from distutils.dir_util import copy_tree
 from sklearn.decomposition import PCA
 from iiif_downloader import Manifest
 from umap import UMAP, AlignedUMAP
+from umap.utils import disconnected_vertices
 from rasterfairy import coonswarp
 from keras.models import Model
 from scipy.stats import kde
@@ -638,8 +639,12 @@ def get_umap_layout(**kwargs):
       relations=[relations_dict.copy() for _ in params[:-1]]
     )
     for idx, i in enumerate(params):
+      # [ejk] purely informational (if too high, this is not good)
+      discon = np.sum(disconnected_vertices(z.mappers_[idx]))
+      if (discon): print(" *   layout {} has {} disconnected vertices"
+                         .format(idx, discon))
       write_layout(i['out_path'], z.embeddings_[idx], **kwargs)
-      print("params[{}] : layouts['umap']['variants'][{}]['layout'] ~ file {}".
+      print(" *   params[{}] : layouts['umap']['variants'][{}]['layout'] ~ file {}".
             format(idx, idx, i['filename'])) # [ejk]
     # save the model
     save_model(model, model_path)

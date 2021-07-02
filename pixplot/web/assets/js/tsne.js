@@ -913,7 +913,7 @@ class ClearingLogger { // [ejk]
   }
 }
 
-const logger = new ClearingLogger(document.querySelector("#debug"));
+const logger = new ClearingLogger(document.querySelector('#debug'));
 
 /**
 * Return a scene object with a background color
@@ -1465,6 +1465,7 @@ World.prototype.setBuffer = function(key, arr) {
 **/
 
 World.prototype.setBorderedImages = function(indices) {
+  //logger.log('setBordered indices',indices)
   var vals = new Uint8Array(data.cells.length);
   for (var i=0; i<indices.length; i++) vals[indices[i]] = 1;
   this.setBuffer('selected', vals);
@@ -1563,7 +1564,7 @@ World.prototype.flyTo = function(obj) {
   //controls = new THREE.TrackballControls(camera);
   controls = this.getControls();
   // [ejk] bug hunting
-  logger.log('cam0',camera.position.x.toFixed(2),camera.position.y.toFixed(2),camera.position.z.toFixed(2));
+  //logger.log('cam0',camera.position.x.toFixed(2),camera.position.y.toFixed(2),camera.position.z.toFixed(2));
   //var camera_z = Math.max(
   //    config.pickerMaxZ+1e-4,
   //    obj.z + (this.getPointScale() / 100) + 1e-4
@@ -1574,8 +1575,8 @@ World.prototype.flyTo = function(obj) {
   camera.position.set(obj.x, obj.y, obj.z);
   controls.target.set(obj.x, obj.y, obj.z);
   controls.update();
-  logger.log('flyTo',obj.x.toFixed(3),obj.y.toFixed(3),obj.z.toFixed(3));
-  logger.render();
+  //logger.log('flyTo',obj.x.toFixed(3),obj.y.toFixed(3),obj.z.toFixed(3));
+  //logger.render();
 
   // prepare scope globals to transition camera
   var time = 0,
@@ -1601,7 +1602,7 @@ World.prototype.flyTo = function(obj) {
       this.controls.target = new THREE.Vector3(c.x, c.y, zMin);
       this.controls.update();
       this.state.flying = false;
-      logger.log('cam1',camera.position.x.toFixed(2),camera.position.y.toFixed(2),camera.position.z.toFixed(2));
+      //logger.log('cam1',camera.position.x.toFixed(2),camera.position.y.toFixed(2),camera.position.z.toFixed(2));
     }.bind(this),
     ease: obj.ease || Power4.easeInOut,
   });
@@ -1614,9 +1615,9 @@ World.prototype.flyToCellIdx = function(idx) {
       config.pickerMaxZ-0.0001,
       cell.z + (this.getPointScale() / 100)
     );
-  logger.log('cell.z',cell.z.toFixed(3),'->',cell_z.toFixed(3),
-    ' PickerMaxZ',config.pickerMaxZ.toFixed(3),
-    'PointScale',this.getPointScale().toFixed(3));
+  //logger.log('cell.z',cell.z.toFixed(3),'->',cell_z.toFixed(3),
+  //  ' PickerMaxZ',config.pickerMaxZ.toFixed(3),
+  //  'PointScale',this.getPointScale().toFixed(3));
   world.flyTo({ x: cell.x, y: cell.y, z: cell_z, })
 }
 
@@ -1727,8 +1728,8 @@ World.prototype.hideSelectTooltip = function() {
 
 World.prototype.setMode = function(mode) {
   this.mode = mode;
-  logger.log('setMode', mode); // [ejk]
-  logger.render();
+  //logger.log('setMode', mode); // [ejk]
+  //logger.render();
   // update the ui buttons to match the selected mode
   var elems = document.querySelectorAll('#selection-icons img');
   for (var i=0; i<elems.length; i++) {
@@ -1801,22 +1802,27 @@ Lasso.prototype.isLassoEvent = function(e) {
   return e.target.id && e.target.id === 'pixplot-canvas';
 }
 
+// [ejk] Avoid confusion between lasso extension (drag)  <-- Ctrl
+//       and world select toggle (click)                 <-- Shift
 Lasso.prototype.handleMouseDown = function(e) {
   if (!this.enabled) return;
   if (!this.isLassoEvent(e)) return;
-  if (!keyboard.shiftPressed() && !keyboard.commandPressed()) {
+  if (!keyboard.ctrlPressed() && !keyboard.commandPressed()) {
     this.points = [];
   }
   this.mousedownCoords = {x: (e.clientX || e.pageX), y: (e.clientY || e.pageY)};
   this.setCapturing(true);
   this.setFrozen(false);
+  //logger.log('lasso mousedown enable',this.enabled,'capt',this.capturing,'froz',this.frozen);
 }
 
 Lasso.prototype.handleMouseMove = function(e) {
   if (!this.capturing || this.frozen) return;
   if (!this.isLassoEvent(e)) return;
+  if (keyboard.shiftPressed()) return; // leave shift for world click toggle
+  //logger.log('lasso mousemove enable',this.enabled,'capt',this.capturing,'froz',this.frozen);
   this.points.push(getEventWorldCoords(e));
-  this.draw();
+  this.draw(); // new convex hull
 }
 
 Lasso.prototype.handleMouseUp = function(e) {
@@ -1826,23 +1832,25 @@ Lasso.prototype.handleMouseUp = function(e) {
   // if the user registered a click, clear the lasso
   if ((e.clientX || e.pageX) == this.mousedownCoords.x &&
       (e.clientY || e.pageY) == this.mousedownCoords.y &&
-      !keyboard.shiftPressed() &&
+      !keyboard.ctrlPressed() &&
       !keyboard.commandPressed()) {
+    logger.log('lasso mouseup --> clear');
     this.clear();
   }
   // do not turn off capturing if the user is clicking the lasso symbol
   if (!e.target.id || e.target.id == 'select') return;
   // prevent the lasso from updating its points boundary
   this.setCapturing(false);
+  //logger.log('lasso mouseup enable',this.enabled,'capt',this.capturing,'froz',this.frozen);
 }
 
 Lasso.prototype.addModalEventListeners = function() {
-
   // close the modal on click of wrapper
   this.elems.modalContainer.addEventListener('click', function(e) {
     if (e.target.className == 'modal-top') {
       this.elems.modalContainer.style.display = 'none';
       this.displayed = false;
+      this.highlightSelected(); // main window reflects any deselections
     }
     if (e.target.className == 'background-image') {
       var index = parseInt(e.target.getAttribute('data-index'));
@@ -1922,12 +1930,16 @@ Lasso.prototype.setFrozen = function(bool) {
 }
 
 Lasso.prototype.clear = function() {
+  logger.log('lasso clear');
   world.setBorderedImages([]);
   this.removeMesh();
   this.elems.viewSelectedContainer.style.display = 'none';
   data.hotspots.setCreateHotspotVisibility(false);
   this.setCapturing(false);
   this.points = [];
+  //this.selected = {}; // buggy
+  for (var k in this.selected) this.selected[k] = false;
+  this.highlightSelected()
 }
 
 Lasso.prototype.removeMesh = function() {
@@ -1936,17 +1948,32 @@ Lasso.prototype.removeMesh = function() {
 
 Lasso.prototype.draw = function() {
   if (this.points.length < 4) return;
-  logger.log("Lasso Draw");
+  //logger.log('Lasso Draw');
   this.points = this.getHull();
   // remove the old mesh
   this.removeMesh();
   // get the indices of images that are inside the polygon
   this.selected = this.getSelectedMap();
+  // [ejk] TODO: refactor to split world vs lasso vs "selection"
+  //             functions, so that hotspot cluster can be redisplayed
+  //             (large overlap w/ hilights for lasso tool)
+  this.highlightSelected();
+  // ----> world.getSelected(this.selected)
+  //  also hotspots can use world.getSelected(...)
+  // obtain and store a mesh, then add the mesh to the scene
+  this.mesh = this.getMesh();
+  world.scene.add(this.mesh);
+}
+
+Lasso.prototype.highlightSelected = function() {
+  // update lasso selection to reflect current this.selected[]
   var indices = [],
       keys = Object.keys(this.selected);
   for (var i=0; i<keys.length; i++) {
     if (this.selected[keys[i]]) indices.push(i)
   }
+  //logger.log('highlightSelected selected',this.selected);
+  //logger.log('highlightSelected indices',indices);
   if (indices.length) {
     // hide the modal describing the lasso behavior
     world.hideSelectTooltip();
@@ -1956,13 +1983,12 @@ Lasso.prototype.draw = function() {
     // allow cluster persistence
     data.hotspots.setCreateHotspotVisibility(true);
   }
-  // indicate the number of cells that are selected
+  else {
+    data.hotspots.setCreateHotspotVisibility(false);
+  }
   this.setNSelected(indices.length);
-  // illuminate the points that are inside the polyline
+  // illuminate the points (that are inside the polyline)
   world.setBorderedImages(indices);
-  // obtain and store a mesh, then add the mesh to the scene
-  this.mesh = this.getMesh();
-  world.scene.add(this.mesh);
 }
 
 // get a mesh that shows the polyline of selected points
@@ -2087,24 +2113,33 @@ Lasso.prototype.getSelectedMap = function() {
   return selected;
 }
 
+//Lasso.prototype.getEmptyMap = function() {
+//  var selected = {};
+//  for (var i=0; i<data.json.images.length; i++)
+//    selected[data.json.images[i]] = false;
+//  return selected;
+//}
+
 Lasso.prototype.toggleSelection = function(idx) {
   var image = data.json.images[idx];
   this.selected[image] = !this.selected[image];
-  logger.log("lasso idx",idx," selected?",this.selected[image]);
-  this.setNSelected(); // [ejk] XXX no parameter means count them
+  //logger.log('lasso idx',idx,' selected?',this.selected[image]);
+  this.setNSelected(); // [ejk] XXX kinda' slow? noargs recounts
 }
 
 Lasso.prototype.setNSelected = function(n) {
   var elem = document.querySelector('#n-images-selected');
   if (!elem) return;
-  if (!Number.isInteger(n)) {
+  if (!Number.isInteger(n)) { // [ejk] can we remove the noargs call?
     var n = 0;
     var keys = Object.keys(this.selected);
     for (var i=0; i<keys.length; i++) {
       if (this.selected[keys[i]]) n++;
     }
   }
-  elem.textContent = n;
+  //logger.log('setNSelected n',n);
+  elem.textContent = n;  // on modal image-selector window
+  this.elems.countTarget.textContent = n; // on main window
 }
 
 /**
@@ -2287,9 +2322,14 @@ Picker.prototype.onMouseUp = function(e) {
     return;
   }
   // if we're in select mode, conditionally un/select the clicked cell
+  //logger.log('world mouseup mode',world.mode,'shift',keyboard.shiftPressed())
   if (world.mode == 'select') {
     if (keyboard.shiftPressed() || keyboard.commandPressed()) {
-      return lasso.toggleSelection(cellIdx);
+      //return lasso.toggleSelection(cellIdx);
+      lasso.toggleSelection(cellIdx);
+      lasso.highlightSelected(); // [ejk] also update the world display
+      //lasso.setFrozen(); // maybe unwanted lasso-drag causing hull change??
+      return;
     }
   }
   // else we're in pan mode; zoom in if the camera is far away, else show the modal
@@ -3495,6 +3535,7 @@ Hotspots.prototype.addEventListeners = function() {
 Hotspots.prototype.render = function() {
   // remove any polygon meshes
   if (this.mesh) world.scene.remove(this.mesh);
+  //logger.log('render');
   // render the new data
   this.elems.hotspots.innerHTML = _.template(this.elems.template.innerHTML)({
     hotspots: this.json,
@@ -3640,6 +3681,8 @@ Hotspots.prototype.setHotspotHoverBuffer = function(arr) {
   for (var i=0; i<arr.length; i++) {
     arr[i] = d[i] ? 1 : 0;
   }
+  //logger.log('clusterSelected', arr);
+  // [ejk] possibly add hotspot image button to set these "as if" lassoed
   world.setBuffer('clusterSelected', arr);
 }
 
@@ -3772,7 +3815,7 @@ Webgl.prototype.getLimits = function() {
 function Keyboard() {
   this.pressed = {};
   window.addEventListener('keydown', function(e) {
-    logger.log("keyboard.pressed",e.keyCode)
+    //logger.log('keyboard.pressed',e.keyCode)
     this.pressed[e.keyCode] = true;
   }.bind(this))
   window.addEventListener('keyup', function(e) {
@@ -3781,6 +3824,10 @@ function Keyboard() {
 }
 
 Keyboard.prototype.shiftPressed = function() {
+  return this.pressed[16];
+}
+
+Keyboard.prototype.ctrlPressed = function() {
   return this.pressed[16];
 }
 
@@ -3847,9 +3894,9 @@ function Tooltip() {
   appName.addEventListener('click', function() {
     localStorage.setItem('select-tooltip-cleared', false);
     localStorage.setItem('hotspots-tooltip-cleared', false);
-    logger.log("tooltip cleared?:",
-      "select", localStorage.getItem('select-tooltip-cleared'),
-      "hotspots", localStorage.getItem('hotspots-tooltip-cleared'));
+    //logger.log('tooltip cleared?:',
+    //  'select', localStorage.getItem('select-tooltip-cleared'),
+    //  'hotspots', localStorage.getItem('hotspots-tooltip-cleared'));
   }.bind(this));
 }
 

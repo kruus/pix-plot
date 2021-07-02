@@ -1474,9 +1474,9 @@ noscript {
 }
 
 .dismissible-tooltip#select-tooltip {
-  left: -168px;
+  /* left: -168px; width: 126px; */
+  left: -230px; width: 190px; /* added shift+click item toggle */
   bottom: 0px;
-  width: 126px;
 }
 
 .dismissible-tooltip#hotspots-tooltip {
