@@ -1053,8 +1053,8 @@ World.prototype.setScaleUniforms = function() {
   var scale = world.getPointScale();
   world.setUniform('scale', scale);
   if (lines.mesh) lines.mesh.material.uniforms.scale.value = scale;
-  logger.log('PointSize:', scale.toFixed(3)); // [ejk]
-  logger.render();
+  //logger.log('PointSize:', scale.toFixed(3)); // [ejk]
+  //logger.render();
 }
 
 /**
@@ -1836,7 +1836,7 @@ Lasso.prototype.handleMouseUp = function(e) {
       (e.clientY || e.pageY) == this.mousedownCoords.y &&
       !keyboard.ctrlPressed() &&
       !keyboard.commandPressed()) {
-    logger.log('lasso mouseup --> clear');
+    //logger.log('lasso mouseup --> clear');
     this.clear();
   }
   // do not turn off capturing if the user is clicking the lasso symbol
@@ -1971,7 +1971,7 @@ Lasso.prototype.setFrozen = function(bool) {
 }
 
 Lasso.prototype.clear = function() {
-  logger.log('lasso clear');
+  //logger.log('lasso clear');
   world.setBorderedImages([]);
   this.removeMesh();
   this.elems.viewSelectedContainer.style.display = 'none';
@@ -3858,7 +3858,7 @@ Webgl.prototype.getLimits = function() {
 function Keyboard() {
   this.pressed = {};
   window.addEventListener('keydown', function(e) {
-    logger.log('keyboard.pressed',e.keyCode)
+    //logger.log('keyboard.pressed',e.keyCode)
     this.pressed[e.keyCode] = true;
   }.bind(this))
   window.addEventListener('keyup', function(e) {
