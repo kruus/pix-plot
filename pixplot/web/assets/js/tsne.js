@@ -1807,6 +1807,7 @@ Lasso.prototype.isLassoEvent = function(e) {
 Lasso.prototype.handleMouseDown = function(e) {
   if (!this.enabled) return;
   if (!this.isLassoEvent(e)) return;
+  if (keyboard.shiftPressed()) return; // [ejk] new
   if (!keyboard.ctrlPressed() && !keyboard.commandPressed()) {
     this.points = [];
   }
@@ -1827,6 +1828,7 @@ Lasso.prototype.handleMouseMove = function(e) {
 
 Lasso.prototype.handleMouseUp = function(e) {
   if (!this.enabled) return;
+  if (keyboard.shiftPressed()) return; // [ejk] new
   // prevent the lasso points from changing
   this.setFrozen(true);
   // if the user registered a click, clear the lasso
@@ -3815,7 +3817,7 @@ Webgl.prototype.getLimits = function() {
 function Keyboard() {
   this.pressed = {};
   window.addEventListener('keydown', function(e) {
-    //logger.log('keyboard.pressed',e.keyCode)
+    logger.log('keyboard.pressed',e.keyCode)
     this.pressed[e.keyCode] = true;
   }.bind(this))
   window.addEventListener('keyup', function(e) {
@@ -3828,7 +3830,7 @@ Keyboard.prototype.shiftPressed = function() {
 }
 
 Keyboard.prototype.ctrlPressed = function() {
-  return this.pressed[16];
+  return this.pressed[17];
 }
 
 Keyboard.prototype.commandPressed = function() {
