@@ -1850,13 +1850,36 @@ Lasso.prototype.addModalEventListeners = function() {
   // close the modal on click of wrapper
   this.elems.modalContainer.addEventListener('click', function(e) {
     if (e.target.className == 'modal-top') {
+      // 1. extract selected image names from selected-images-modal
+      var imgs = this.elems.modalTarget.querySelectorAll('.background-image');
+      var imgNames = [];
+      for (var i=0; i<imgs.length; i++) {
+        var img = imgs[i],
+            image = img.getAttribute('data-image'),
+            //idx = img.getAttribute('data-index'), // pos in modal display
+            unselected = img.classList.contains('unselected');
+        if (!unselected)
+          imgNames.push(image);
+      }
+      // 2. reflect modal image selections into this->selected
+      // and get their main-window indices
+      var indices = [],
+          keys = Object.keys(this.selected);
+      for (var i=0; i<keys.length; i++) {
+        var sel = (imgNames.indexOf(keys[i]) >= 0);
+        this.selected[keys[i]] = sel;
+        if (sel) indices.push(i); // give highlightSelected a helping hand
+      }
+      // 3. update selection in main window
+      this.highlightSelected(indices); // main window reflects any deselections
+      // 4. close modal View Selections
       this.elems.modalContainer.style.display = 'none';
       this.displayed = false;
-      this.highlightSelected(); // main window reflects any deselections
     }
     if (e.target.className == 'background-image') {
       var index = parseInt(e.target.getAttribute('data-index'));
       var indices = [];
+      // error: OK only if deselect leaves this->select const
       Object.keys(this.selected).forEach(function(i, idx) {
         if (this.selected[i]) indices.push(idx);
       }.bind(this))
@@ -1869,6 +1892,10 @@ Lasso.prototype.addModalEventListeners = function() {
     var images = Object.keys(this.selected).filter(function(k) {
       return this.selected[k];
     }.bind(this))
+    // [ejk] accumulate modal selection info locally until modal is dismissed
+    this.nModalSelected = images.length
+    this.modalSelected = new Array(this.nModalSelected).fill(true);
+    logger.log('viewSelected click',this.modalSelected);
     var template = _.template(this.elems.modalTemplate.textContent)
     this.elems.modalTarget.innerHTML = template({ images: images });
     this.elems.modalContainer.style.display = 'block';
@@ -1879,16 +1906,28 @@ Lasso.prototype.addModalEventListeners = function() {
   this.elems.modalContainer.addEventListener('click', function(e) {
     if (e.target.className.includes('toggle-selection')) {
       e.preventDefault();
+      //logger.log(e.target.parentNode.className); // --> selected-image
+      logger.log(e.target.parentNode.parentNode.id); // --> selected-images-grid
       var sibling = e.target.parentNode.querySelector('.background-image'),
-          image = sibling.getAttribute('data-image');
+          image = sibling.getAttribute('data-image'),
+          idx = sibling.getAttribute('data-index');
+      // idx = 0,1,2 image position in modalContainer
       sibling.classList.contains('unselected')
         ? sibling.classList.remove('unselected')
         : sibling.classList.add('unselected');
-      for (var i=0; i<data.json.images.length; i++) {
-        if (data.json.images[i] == image) {
-          this.toggleSelection(i);
-          break;
-        }
+      // # selected images reflects toggle-selection
+      var elem = document.querySelector('#n-images-selected');
+      if (elem) {
+        var sel = []; // modal window selections (T/F list)
+        var imgs = this.elems.modalTarget.querySelectorAll('.background-image');
+        for (var i=0; i<imgs.length; i++)
+          //var img = imgs[i],
+          //    image = img.getAttribute('data-image'),
+          //    idx = img.getAttribute('data-index'),
+          //    unselected = img.classList.contains('unselected');
+          sel.push(imgs[i].classList.contains('unselected')? false: true);
+        // display count on modal window
+        elem.textContent = sel.reduce(function(sum,x){return sum+x;});
       }
     }
   }.bind(this))
@@ -1967,12 +2006,14 @@ Lasso.prototype.draw = function() {
   world.scene.add(this.mesh);
 }
 
-Lasso.prototype.highlightSelected = function() {
-  // update lasso selection to reflect current this.selected[]
-  var indices = [],
+Lasso.prototype.highlightSelected = function(indices) {
+  if (!indices) {
+    // update lasso selection to reflect current this.selected[]
+    indices = [],
       keys = Object.keys(this.selected);
-  for (var i=0; i<keys.length; i++) {
-    if (this.selected[keys[i]]) indices.push(i)
+    for (var i=0; i<keys.length; i++) {
+      if (this.selected[keys[i]]) indices.push(i)
+    }
   }
   //logger.log('highlightSelected selected',this.selected);
   //logger.log('highlightSelected indices',indices);
